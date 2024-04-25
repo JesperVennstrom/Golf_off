@@ -2,10 +2,7 @@ import pygame
 from config import *
 from sprites import *
 from PIL import Image
-from numpy import asarray
 import sys
-import cProfile
-import re
 
 class Game: 
     def __init__(self):
@@ -30,7 +27,6 @@ class Game:
         self.players = []
         self.first_hit = False
         self.players.append(Player(self, 10, 10))
-        self.players.append(Player(self, 15, 10))
         self.generateTilemap()
 
     def events(self):
@@ -79,6 +75,8 @@ class Game:
             for j, column in enumerate(row):
                 if column == 1:
                     Ground(self, j, i)
+                if column == 2:
+                    GroundCorner(self, j, i, 4)
 
     def draw(self):
         self.screen.fill(BROWN)

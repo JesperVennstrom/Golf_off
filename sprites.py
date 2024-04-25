@@ -75,7 +75,12 @@ class Player(pygame.sprite.Sprite):
             if self.game.players[self.index-1].hit_side and self.game.players[self.index-1].hit_top  and self.game.players[self.index-1].counter == 3:
                 print("corner")
                 self.game.first_hit = False
-                self.game.players[self.index-1].angle = 180 * 0.0174532925
+                self.game.players[self.index-1].angle = -(self.game.players[self.index-1].angle + 180 * 0.0174532925 + 360 * 0.0174532925)
+
+            if not self.game.players[self.index-1].hit_side and not self.game.players[self.index-1].hit_top and self.game.players[self.index-1].counter == 3:
+                print("nothing")
+                self.game.first_hit = False
+                self.game.players[self.index-1].angle = -(self.game.players[self.index-1].angle + 180 * 0.0174532925 + 360 * 0.0174532925)
             if self.game.players[self.index-1].hit_side and not self.game.players[self.index-1].hit_top and self.game.players[self.index-1].counter == 3:
                 print("side")
                 self.game.first_hit = False
@@ -91,22 +96,22 @@ class Player(pygame.sprite.Sprite):
 
         if not self.pressed[0]:
             if not self.first_time:
-                self.speed = math.sqrt(self.pos_end[0] ** 2 + self.pos_end[1] ** 2) / 15
+                self.game.players[self.index].speed = math.sqrt(self.game.players[self.index].pos_end[0] ** 2 + self.game.players[self.index].pos_end[1] ** 2) / 20
                 pygame.draw.circle(self.game.players[self.index].image, RED, (self.radius, self.radius), self.radius)
                 self.index += 1
                 if self.index > len(self.game.players) - 1:
                     self.index = 0
             
-            self.first_time = True
+            self.game.players[self.index].first_time = True
 
-        if self.pressed[0] and self.game.players[self.index].rect.collidepoint(self.mouse_pos) and self.speed <= 0.1:
-            if self.first_time:
-                self.pos_start = (self.mouse_pos[0], self.mouse_pos[1])
-                self.first_time = False
+        if self.game.players[self.index].pressed[0] and self.game.players[self.index].rect.collidepoint(self.mouse_pos) and self.game.players[self.index].speed <= 0.1:
+            if self.game.players[self.index].first_time:
+                self.game.players[self.index].pos_start = (self.mouse_pos[0], self.mouse_pos[1])
+                self.game.players[self.index].first_time = False
         if self.pressed[0] and not self.first_time and self.speed <= 0.1:
-            self.pos_end = ((self.mouse_pos[0] - self.pos_start[0]), (self.mouse_pos[1] - self.pos_start[1]))
+            self.game.players[self.index].pos_end = ((self.mouse_pos[0] - self.pos_start[0]), (self.mouse_pos[1] - self.pos_start[1]))
             self.angle = math.atan2(self.pos_end[1], self.pos_end[0])
-            self.hit = False
+            self.game.players[self.index].hit = False
 
     def movement(self):
         pygame.draw.circle(self.game.players[self.index].image, BLUE, (self.radius, self.radius), self.radius)
@@ -114,11 +119,11 @@ class Player(pygame.sprite.Sprite):
         if self.game.players[self.index-1].speed > 0.1 and not self.game.first_hit: 
                 self.copy = self.game.players[self.index-1].rect.copy()
                 self.collide()
-                self.game.players[self.index-1].rect.x -= self.speed * math.cos(self.game.players[self.index-1].angle)
-                self.game.players[self.index-1].rect.y -= self.speed * math.sin(self.game.players[self.index-1].angle)
+                self.game.players[self.index-1].rect.x -= self.game.players[self.index-1].speed * math.cos(self.game.players[self.index-1].angle)
+                self.game.players[self.index-1].rect.y -= self.game.players[self.index-1].speed * math.sin(self.game.players[self.index-1].angle)
         elif self.game.players[self.index-1].speed > 0.1 and self.game.first_hit:
             self.collide()
-        self.speed = self.speed * 0.95
+        self.speed = self.speed * 0.97
 
 class Ground(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -141,7 +146,25 @@ class Ground(pygame.sprite.Sprite):
 
         self.game.block_list.append(self.rect)
 
+class GroundCorner(pygame.sprite.Sprite):
+    def __init__(self, game, x, y, radius):
+        self.game = game
+        self._layer = CIRCLE_LAYER
+        self.groups = self.game.all_sprites, self.game.blocks
+        pygame.sprite.Sprite.__init__(self, self.groups)
 
+        self.x = x * TILESIZE
+        self.y = y * TILESIZE
+        self.width = TILESIZE * radius
+        self.height = TILESIZE * radius
+        
+        self.radius = (radius * TILESIZE) / 2
+        self.image = pygame.surface.Surface ((self.width, self.height), pygame.SRCALPHA)
+        self.rect = pygame.draw.rect(self.image, RED, pygame.Rect(0,0,self.width,self.height), border_radius=self.width)
+        self.rect.x = self.x - self.radius / 2
+        self.rect.y = self.y - self.radius / 2
+
+        self.game.block_list.append(self.rect)
 
 
 
