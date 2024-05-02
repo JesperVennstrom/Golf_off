@@ -16,7 +16,6 @@ class Player(pygame.sprite.Sprite):
         self.hits = False
         self.game.first_hit = False
         self.counter = 1
-
         self.hit_side = False
         self.hit_top = False
 
@@ -27,7 +26,6 @@ class Player(pygame.sprite.Sprite):
         self.pos_end = (0, 0)
 
         self.x = x * TILESIZE
-
         self.y = y * TILESIZE
 
         self.angle = 0
@@ -37,14 +35,48 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
 
+        self.center = pygame.sprite.Sprite()
+        pygame.sprite.Sprite.__init__(self.center, self.groups) 
+        self.center.image = pygame.Surface((1, 1))
+        self.center.rect = pygame.draw.circle(self.center.image, BLACK, (self.radius, self.radius), 1)
+        self.center.rect.x = self.rect.centerx
+        self.center.rect.y = self.rect.centery
+
+
     def update(self):
         self.collide()
         self.movement()
-        
+        self.win()
+        self.hillPitCollide()
 
+    def hillPitCollide(self):
+        hits_hill = pygame.sprite.spritecollide(self, self.game.hill, False)
+        if hits_hill:
+            hits_circle = pygame.sprite.collide_circle(self.center, hits_hill[0])
+            print(hits_hill[0])
+            if hits_circle:
+                hill_angle = math.atan2(hits_hill[0].rect.centery - self.rect.centery, hits_hill[0].rect.centerx - self.rect.centerx)
+                self.speed = math.sqrt((hits_hill[0].speed * math.cos(hill_angle) + self.speed * math.cos(self.angle)) ** 2 + (hits_hill[0].speed * math.sin(hill_angle) + self.speed * math.sin(self.angle)) ** 2)
+                self.angle = math.atan2(hits_hill[0].speed * math.sin(hill_angle) + self.speed * math.sin(self.angle), hits_hill[0].speed * math.cos(hill_angle) + self.speed * math.cos(self.angle))
+                print("HIT")
+
+
+    def goalCollide(self):
+        for sprite in self.game.goal:
+            self.goal = sprite
+    def win(self):
+        hits = False
+        self.goalCollide()
+        hits = pygame.sprite.collide_circle(self.goal, self.center)
+            
+        if hits and self.speed < 0.1:
+            print("You win!")
+            self.kill()
+        elif hits and self.speed > 0.1:
+            self.speed = self.speed * 0.85
     def collide(self):
         block_rect = self.game.block_list[0].unionall(self.game.block_list)
-        self.game.players[self.index-1].hits = block_rect.contains(self.game.players[self.index-1].rect)
+        self.game.players[self.index-1].hits = block_rect.contains((self.game.players[self.index-1].rect))
 
         if not self.game.players[self.index-1].hits and not self.game.first_hit:
             self.game.first_hit = True
@@ -56,6 +88,7 @@ class Player(pygame.sprite.Sprite):
         if self.game.first_hit:
             if self.game.players[self.index-1].hits and self.game.players[self.index-1].counter == 1:
                 self.game.players[self.index-1].hit_side = True
+
             if self.game.players[self.index-1].hits and self.game.players[self.index-1].counter == 2:
                 self.game.players[self.index-1].hit_top = True
 
@@ -121,6 +154,8 @@ class Player(pygame.sprite.Sprite):
                 self.collide()
                 self.game.players[self.index-1].rect.x -= self.game.players[self.index-1].speed * math.cos(self.game.players[self.index-1].angle)
                 self.game.players[self.index-1].rect.y -= self.game.players[self.index-1].speed * math.sin(self.game.players[self.index-1].angle)
+                self.center.rect.x = self.game.players[self.index-1].rect.centerx
+                self.center.rect.y = self.game.players[self.index-1].rect.centery
         elif self.game.players[self.index-1].speed > 0.1 and self.game.first_hit:
             self.collide()
         self.speed = self.speed * 0.97
@@ -160,13 +195,73 @@ class GroundCorner(pygame.sprite.Sprite):
         
         self.radius = (radius * TILESIZE) / 2
         self.image = pygame.surface.Surface ((self.width, self.height), pygame.SRCALPHA)
-        self.rect = pygame.draw.rect(self.image, RED, pygame.Rect(0,0,self.width,self.height), border_radius=self.width)
+        self.rect = pygame.draw.rect(self.image, GREEN, pygame.Rect(0,0,self.width,self.height), border_radius=self.width)
         self.rect.x = self.x - self.radius / 2
         self.rect.y = self.y - self.radius / 2
 
         self.game.block_list.append(self.rect)
 
 
+class Goal(pygame.sprite.Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+        self._layer = CIRCLE_LAYER
+        self.groups = self.game.all_sprites, self.game.goal
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        self.x = x * TILESIZE
+        self.y = y * TILESIZE
+        self.width = TILESIZE * 2
+        self.height = TILESIZE * 2
+
+        self.radius = TILESIZE
+        self.image = pygame.surface.Surface((self.width, self.height), pygame.SRCALPHA)
+        self.rect = pygame.draw.circle(self.image, BLACK, (self.radius, self.radius), self.radius)
+        self.rect.x = self.x
+        self.rect.y = self.y
+
+class Hill(pygame.sprite.Sprite):
+    def __init__(self, game, x, y, radius, speed):
+        self.game = game
+        self._layer = CIRCLE_LAYER
+        self.groups = self.game.all_sprites, self.game.hill
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        self.x = x * TILESIZE
+        self.y = y * TILESIZE
+        self.width = TILESIZE * radius
+        self.height = TILESIZE * radius
+        
+        self.speed = speed
+
+        self.radius = (radius * TILESIZE) / 2
+        self.image = pygame.surface.Surface ((self.width, self.height), pygame.SRCALPHA)
+        self.rect = pygame.draw.circle(self.image, DARK_GREEN, (self.radius, self.radius), self.radius)
+        self.rect.x = self.x - self.radius / 2
+        self.rect.y = self.y - self.radius / 2
+
+        self.game.block_list.append(self.rect)
+class Pit(pygame.sprite.Sprite):
+    def __init__(self, game, x, y, radius, speed):
+        self.game = game
+        self._layer = CIRCLE_LAYER
+        self.groups = self.game.all_sprites, self.game.hill
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        self.x = x * TILESIZE
+        self.y = y * TILESIZE
+        self.width = TILESIZE * radius
+        self.height = TILESIZE * radius
+        
+        self.speed = speed
+
+        self.radius = (radius * TILESIZE) / 2
+        self.image = pygame.surface.Surface ((self.width, self.height), pygame.SRCALPHA)
+        self.rect = pygame.draw.circle(self.image, LIGHT_GREEN, (self.radius, self.radius), self.radius)
+        self.rect.x = self.x - self.radius / 2
+        self.rect.y = self.y - self.radius / 2
+
+        self.game.block_list.append(self.rect)
 
             
             

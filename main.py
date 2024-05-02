@@ -16,10 +16,12 @@ class Game:
     def new(self):
         self.playing = True
 
-        self.all_sprites = pygame.sprite.LayeredUpdates()
-        self.blocks = pygame.sprite.LayeredUpdates()
+        self.all_sprites   = pygame.sprite.LayeredUpdates()
+        self.blocks        = pygame.sprite.LayeredUpdates()
         self.player_sprite = pygame.sprite.LayeredUpdates()
-        self.attacks = pygame.sprite.LayeredUpdates()
+        self.goal          = pygame.sprite.LayeredUpdates()
+        self.hill          = pygame.sprite.LayeredUpdates()
+        self.pit           = pygame.sprite.LayeredUpdates()
         map = Image.open('img/frame-1-_1_.ppm')
         print(map)
 
@@ -77,6 +79,11 @@ class Game:
                     Ground(self, j, i)
                 if column == 2:
                     GroundCorner(self, j, i, 4)
+                if column == 3:
+                    Goal(self, j, i)
+                    Ground(self, j, i)
+                if column == 4:
+                    Hill(self, j, i, 4, 0.1)
 
     def draw(self):
         self.screen.fill(BROWN)
