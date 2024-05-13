@@ -77,13 +77,16 @@ class Game:
             for j, column in enumerate(row):
                 if column == 1:
                     Ground(self, j, i)
-                if column == 2:
+                elif column == 2:
                     GroundCorner(self, j, i, 4)
-                if column == 3:
+                elif column == 3:
                     Goal(self, j, i)
                     Ground(self, j, i)
-                if column == 4:
+                    Pit(self, j, i, 2, 0.1)
+                elif column == 4:
                     Hill(self, j, i, 4, 0.1)
+                elif column == 5:
+                    Pit(self, j, i, 6, 0.2  )
 
     def draw(self):
         self.screen.fill(BROWN)
