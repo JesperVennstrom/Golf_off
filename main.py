@@ -10,7 +10,7 @@ class Game:
         pygame.display.set_caption("GOLF OFF")
         self.screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.Font("freesansbold.ttf", 32)
+        self.font = pygame.font.Font("comici.ttf", 32)
         self.running = True
 
         self.index = 0
@@ -29,10 +29,8 @@ class Game:
         self.block_list = []
         self.players = []
         self.first_hit = False
-        self.players.append(Player(self, 10, 12))
-        self.players.append(Player(self, 10, 12))
-        self.players.append(Player(self, 10, 12))
-        self.players.append(Player(self, 10, 12))
+        for i in range(self.count):
+            self.players.append(Player(self, 10, 10))
         self.generateTilemap()
         self.y_offset = self.players[0].rect.centery - WIN_HEIGHT/2
         self.x_offset = self.players[0].rect.centerx - WIN_WIDTH/2
@@ -111,7 +109,61 @@ class Game:
         pass
 
     def introScreen(self):
-        pass
+        intro = True
+        text = self.font.render("Golf Off", True, BLACK)
+        text_rect = text.get_rect(center=(WIN_WIDTH/2, WIN_HEIGHT/2))
+        start_text = self.font.render("Select Player Amount", True, BLACK)
+        start_rect = start_text.get_rect(center=(WIN_WIDTH/2, WIN_HEIGHT/2))
+        start_button = Button(WIN_WIDTH/2 - 50, 350, 100, 50, BLACK, WHITE, "Start", 32)
+        option_1 = Button(WIN_WIDTH/2 - 220, 350, 100, 50, BLACK, WHITE, "1", 32)
+        option_2 = Button(WIN_WIDTH/2 - 110, 350, 100, 50, BLACK, WHITE, "2", 32)
+        option_3 = Button(WIN_WIDTH/2 + 10, 350, 100, 50, BLACK, WHITE, "3", 32)
+        option_4 = Button(WIN_WIDTH/2 + 120, 350, 100, 50, BLACK, WHITE, "4", 32)
+        while intro:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    intro = False
+                    self.running = False
+            key = pygame.key.get_pressed()
+            if key[pygame.K_SPACE]:
+                intro = False
+            self.clock.tick(FPS)
+            self.screen.fill(PURPLE)
+            self.screen.blit(text, text_rect)
+            self.screen.blit(start_button.image, start_button.rect)
+            pygame.display.update()
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_pressed = pygame.mouse.get_pressed()
+            if start_button.isPressed(mouse_pos, mouse_pressed):
+                intro = False
+                start = True
+        while start:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    start = False
+                    self.running = False
+                mouse_pos = pygame.mouse.get_pos()
+                mouse_pressed = pygame.mouse.get_pressed()
+                if option_1.isPressed(mouse_pos, mouse_pressed):
+                    self.count = 1
+                    start = False
+                elif option_2.isPressed(mouse_pos, mouse_pressed):
+                    self.count = 2
+                    start = False
+                elif option_3.isPressed(mouse_pos, mouse_pressed):
+                    self.count = 3
+                    start = False
+                elif option_4.isPressed(mouse_pos, mouse_pressed):
+                    self.count = 4
+                    start = False
+            self.screen.fill(PURPLE)
+            self.screen.blit(option_1.image, option_1.rect)
+            self.screen.blit(option_2.image, option_2.rect)
+            self.screen.blit(option_3.image, option_3.rect)
+            self.screen.blit(option_4.image, option_4.rect)
+            self.screen.blit(start_text, start_rect)
+
+            pygame.display.update()
 
 g = Game()
 g.introScreen()

@@ -299,5 +299,87 @@ class Pit(pygame.sprite.Sprite):
 
         self.game.block_list.append(self.rect)
 
+class Button:
+    def __init__(self, x, y, width, height, fg, bg, content, fontsize):
+        self.font = pygame.font.Font("comici.ttf", fontsize)
+        self.content = content
+        
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+        self.fg = fg
+        self.bg = bg
+
+        self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        self.image.fill(self.bg)
+        self.rect = self.image.get_rect()
+        
+        self.rect.x = self.x
+        self.rect.y = self.y
+
+        self.text = self.font.render(self.content, True, self.fg)
+        self.text_rect = self.text.get_rect(center =(self.width/2, self.height/2))
+        self.image.blit(self.text, self.text_rect)
+    def isPressed(self, pos, pressed):
+        if self.rect.collidepoint(pos):
+            if pressed[0]:
+                return True
+            return False
+        return False
+    
+class PlayersButton:
+    def __init__(self, x, y, width, height, fg, bg, fontsize):
+
+        self.font = pygame.font.Font("comici.ttf", fontsize)
+        self.count = 1
+        self.number = self.font.render(str(self.count), True, fg)
+        self.number_rect = self.number.get_rect(center=(width/2, height/2))
+        self.down_image = pygame.Surface((width/2, height),pygame.SRCALPHA)
+        self.down_rect = self.down_image.get_rect(center=(10, height/2))
+        self.down_image.blit(self.font.render("<", True, fg),(0,0))
+        
+        self.up_image = pygame.Surface((width/2, height),pygame.SRCALPHA)
+        self.up_rect = self.up_image.get_rect(center=(width-10, height/2))
+        self.up_image.blit(self.font.render(">", True, fg),(0,0))
+
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+        self.image = pygame.Surface((self.width, self.height))
+        self.image.fill(bg)
+
+        self.rect = self.image.get_rect()
+
+        self.rect.x = self.x
+        self.rect.y = self.y
+
+        self.image.blit(self.number, self.number_rect)
+        self.image.blit(self.down_image, self.down_rect)
+        self.image.blit(self.up_image, self.up_rect)
+
+    def update(self,mouse_pos, mouse_pressed):
+        print(self.count)
+        self.pressed(mouse_pos, mouse_pressed)
+        self.image.blit(self.number, self.number_rect)
+        self.image.blit(self.down_image, self.down_rect)
+        self.image.blit(self.up_image, self.up_rect)
+
+    def pressed(self,mouse_pos, mouse_pressed):
+        if self.rect.collidepoint(mouse_pos):
+            if mouse_pressed[0]:
+                self.count -= 1
+                if self.count < 0:
+                    self.count = 0
+        if self.rect.collidepoint(mouse_pos):
+            if mouse_pressed[0]:
+                self.count += 1
+                if self.count > 4:
+                    self.count = 4
+    
+
             
             
