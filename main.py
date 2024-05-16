@@ -13,6 +13,8 @@ class Game:
         self.font = pygame.font.Font("freesansbold.ttf", 32)
         self.running = True
 
+        self.index = 0
+
     def new(self):
         self.playing = True
 
@@ -23,14 +25,20 @@ class Game:
         self.hill          = pygame.sprite.LayeredUpdates()
         self.pit           = pygame.sprite.LayeredUpdates()
         map = Image.open('img/frame-1-_1_.ppm')
-        print(map)
 
         self.block_list = []
         self.players = []
         self.first_hit = False
-        self.players.append(Player(self, 10, 10))
+        self.players.append(Player(self, 10, 12))
+        self.players.append(Player(self, 10, 12))
+        self.players.append(Player(self, 10, 12))
+        self.players.append(Player(self, 10, 12))
         self.generateTilemap()
-
+        self.y_offset = self.players[0].rect.centery - WIN_HEIGHT/2
+        self.x_offset = self.players[0].rect.centerx - WIN_WIDTH/2
+        for sprite in self.all_sprites:
+            sprite.rect.x -= self.x_offset
+            sprite.rect.y -= self.y_offset
     def events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -91,9 +99,10 @@ class Game:
     def draw(self):
         self.screen.fill(BROWN)
         self.all_sprites.draw(self.screen)
+        if self.players:
+            self.screen.blit(pygame.font.Font.render(self.font, str(self.players[self.index].score), True, BLACK), (WIN_WIDTH/2, 10))
         self.clock.tick(FPS)
-        if not self.first_hit:
-            pygame.display.update()
+        pygame.display.update()
 
     def update(self):
         self.all_sprites.update()

@@ -11,8 +11,6 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.radius = TILESIZE // 2
         
-        self.index = 0
-
         self.hits = False
         self.game.first_hit = False
         self.counter = 1
@@ -20,6 +18,10 @@ class Player(pygame.sprite.Sprite):
         self.hit_top = False
 
         self.first_time = True
+        
+        self.score = 0
+        self.x_offset = 0
+        self.y_offset = 0
 
         self.speed = 0
         self.pos_start = (0, 0)
@@ -27,6 +29,8 @@ class Player(pygame.sprite.Sprite):
 
         self.x = x * TILESIZE
         self.y = y * TILESIZE
+
+        self.switch = False
 
         self.angle = 0
 
@@ -38,13 +42,12 @@ class Player(pygame.sprite.Sprite):
         self.center = pygame.sprite.Sprite()
         pygame.sprite.Sprite.__init__(self.center, self.groups) 
         self.center.image = pygame.Surface((1, 1))
-        self.center.rect = pygame.draw.circle(self.center.image, BLACK, (self.radius, self.radius), 1)
+        self.center.rect = pygame.draw.circle(self.center.image, TRANSPARENT, (self.radius, self.radius), 1)
         self.center.rect.x = self.rect.centerx
         self.center.rect.y = self.rect.centery
 
 
     def update(self):
-        self.collide()
         self.movement()
         self.win()
         self.hillPitCollide()
@@ -72,55 +75,68 @@ class Player(pygame.sprite.Sprite):
         if hits and self.speed < 0.1:
             print("You win!")
             self.kill()
+            self.game.index+=1
+            if self.game.index > len(self.game.players)-1:
+                self.game.index = 0
+            self.x_offset = self.game.players[self.game.index].rect.centerx - self.game.players[self.game.index-1].rect.centerx
+            self.y_offset = self.game.players[self.game.index].rect.centery - self.game.players[self.game.index-1].rect.centery
+            for sprite in self.game.all_sprites:
+                sprite.rect.x -= self.x_offset
+                sprite.rect.y -= self.y_offset
+            self.game.players.remove(self)
+            if self.game.index > len(self.game.players)-1:
+                self.game.index = 0
+
+    def moveX(self):
+        self.rect.x -= self.speed * math.cos(self.angle)
+        self.center.rect.x = self.rect.centerx
+        for sprite in self.game.all_sprites:
+            sprite.rect.x += self.speed * math.cos(self.angle)
+
+    def moveY(self):
+        self.rect.y -= self.speed * math.sin(self.angle)
+        self.center.rect.y = self.rect.centery
+        for sprite in self.game.all_sprites:
+            sprite.rect.y += self.speed * math.sin(self.angle)
+
+        
+
+
+
+    def movement(self):
+        if self.game.players[self.game.index] == self:
+            pygame.draw.circle(self.image, BLUE, (self.radius, self.radius), self.radius)
+            self.checkMouse()
+        else:
+            pygame.draw.circle(self.image, RED, (self.radius, self.radius), self.radius)
+        if self.speed > 0.1:
+            self.moveX()
+            self.collideX()
+            self.moveY()
+            self.collideY()
+        self.speed = self.speed * 0.97
             
-    def collide(self):
+    def collideX(self):
         block_rect = self.game.block_list[0].unionall(self.game.block_list)
-        self.game.players[self.index-1].hits = block_rect.contains((self.game.players[self.index-1].rect))
+        self.hits = block_rect.contains((self.rect))
+        if not self.hits:
+            for sprite in self.game.all_sprites:
+                if sprite != self:
+                    sprite.rect.x -= self.speed * math.cos(self.angle)
+            self.angle = -(self.angle + 180 * 0.0174532925)
+            print("hitx")
 
-        if not self.game.players[self.index-1].hits and not self.game.first_hit:
-            self.game.first_hit = True
-            self.game.players[self.index-1].hit_side = False
-            self.game.players[self.index-1].hit_top = False
-            self.game.players[self.index-1].counter = 0
-            self.game.players[self.index-1].current = self.game.players[self.index-1].rect.copy()
+    def collideY(self):
+        block_rect = self.game.block_list[0].unionall(self.game.block_list)
+        self.hits = block_rect.contains((self.rect))
+        if not self.hits: 
+            for sprite in self.game.all_sprites:
+                if sprite != self:
+                    sprite.rect.y -= self.speed * math.sin(self.angle)
+            self.angle = -(self.angle + 360 * 0.0174532925)
+            print("hitY")
 
-        if self.game.first_hit:
-            if self.game.players[self.index-1].hits and self.game.players[self.index-1].counter == 1:
-                self.game.players[self.index-1].hit_side = True
 
-            if self.game.players[self.index-1].hits and self.game.players[self.index-1].counter == 2:
-                self.game.players[self.index-1].hit_top = True
-
-            if self.game.players[self.index-1].counter == 2:
-                self.game.players[self.index-1].counter += 1
-                self.game.players[self.index-1].rect.x = self.game.players[self.index-1].copy.x
-
-            if self.game.players[self.index-1].counter == 1:
-                self.game.players[self.index-1].counter += 1
-                self.game.players[self.index-1].rect.y = self.copy.y
-                self.game.players[self.index-1].rect.x = self.game.players[self.index-1].current.x
-
-            if self.game.players[self.index-1].counter == 0:
-                self.game.players[self.index-1].counter += 1
-                self.game.players[self.index-1].rect.x = self.game.players[self.index-1].copy.x
-
-            if self.game.players[self.index-1].hit_side and self.game.players[self.index-1].hit_top  and self.game.players[self.index-1].counter == 3:
-                print("corner")
-                self.game.first_hit = False
-                self.game.players[self.index-1].angle = -(self.game.players[self.index-1].angle + 180 * 0.0174532925 + 360 * 0.0174532925)
-
-            if not self.game.players[self.index-1].hit_side and not self.game.players[self.index-1].hit_top and self.game.players[self.index-1].counter == 3:
-                print("nothing")
-                self.game.first_hit = False
-                self.game.players[self.index-1].angle = -(self.game.players[self.index-1].angle + 180 * 0.0174532925 + 360 * 0.0174532925)
-            if self.game.players[self.index-1].hit_side and not self.game.players[self.index-1].hit_top and self.game.players[self.index-1].counter == 3:
-                print("side")
-                self.game.first_hit = False
-                self.game.players[self.index-1].angle = -(self.game.players[self.index-1].angle + 180 * 0.0174532925)
-            if not self.game.players[self.index-1].hit_side and self.game.players[self.index-1].hit_top and self.counter == 3:
-                print("top")
-                self.game.first_hit = False
-                self.game.players[self.index-1].angle = -(self.game.players[self.index-1].angle + 360 * 0.0174532925)
             
     def checkMouse(self):
         self.mouse_pos = pygame.mouse.get_pos()
@@ -128,36 +144,31 @@ class Player(pygame.sprite.Sprite):
 
         if not self.pressed[0]:
             if not self.first_time:
-                self.game.players[self.index].speed = math.sqrt(self.game.players[self.index].pos_end[0] ** 2 + self.game.players[self.index].pos_end[1] ** 2) / 20
-                pygame.draw.circle(self.game.players[self.index].image, RED, (self.radius, self.radius), self.radius)
-                self.index += 1
-                if self.index > len(self.game.players) - 1:
-                    self.index = 0
-            
-            self.game.players[self.index].first_time = True
+                self.speed = math.sqrt(self.pos_end[0] ** 2 + self.pos_end[1] ** 2) / 20
+                self = self
+                self.score += 1
+                self.switch = True
+            self.first_time = True
+            if self.switch and self.speed < 0.1:
+                self.game.index += 1
+                if self.game.index > len(self.game.players)-1:
+                    self.game.index = 0
+                self.x_offset = self.game.players[self.game.index].rect.centerx - self.game.players[self.game.index-1].rect.centerx
+                self.y_offset = self.game.players[self.game.index].rect.centery - self.game.players[self.game.index-1].rect.centery
+                for sprite in self.game.all_sprites:
+                    sprite.rect.x -= self.x_offset
+                    sprite.rect.y -= self.y_offset
+                self.switch = False
 
-        if self.game.players[self.index].pressed[0] and self.game.players[self.index].rect.collidepoint(self.mouse_pos) and self.game.players[self.index].speed <= 0.1:
-            if self.game.players[self.index].first_time:
-                self.game.players[self.index].pos_start = (self.mouse_pos[0], self.mouse_pos[1])
-                self.game.players[self.index].first_time = False
+        if self.pressed[0] and self.rect.collidepoint(self.mouse_pos) and self.speed <= 0.1:
+            if self.first_time:
+                self.pos_start = (self.mouse_pos[0], self.mouse_pos[1])
+                self.first_time = False
         if self.pressed[0] and not self.first_time and self.speed <= 0.1:
-            self.game.players[self.index].pos_end = ((self.mouse_pos[0] - self.pos_start[0]), (self.mouse_pos[1] - self.pos_start[1]))
+            self.pos_end = ((self.mouse_pos[0] - self.pos_start[0]), (self.mouse_pos[1] - self.pos_start[1]))
             self.angle = math.atan2(self.pos_end[1], self.pos_end[0])
-            self.game.players[self.index].hit = False
+            self.hit = False
 
-    def movement(self):
-        pygame.draw.circle(self.game.players[self.index].image, BLUE, (self.radius, self.radius), self.radius)
-        self.checkMouse()
-        if self.game.players[self.index-1].speed > 0.1 and not self.game.first_hit: 
-                self.copy = self.game.players[self.index-1].rect.copy()
-                self.collide()
-                self.game.players[self.index-1].rect.x -= self.game.players[self.index-1].speed * math.cos(self.game.players[self.index-1].angle)
-                self.game.players[self.index-1].rect.y -= self.game.players[self.index-1].speed * math.sin(self.game.players[self.index-1].angle)
-                self.center.rect.x = self.game.players[self.index-1].rect.centerx
-                self.center.rect.y = self.game.players[self.index-1].rect.centery
-        elif self.game.players[self.index-1].speed > 0.1 and self.game.first_hit:
-            self.collide()
-        self.speed = self.speed * 0.97
 
 class Ground(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
