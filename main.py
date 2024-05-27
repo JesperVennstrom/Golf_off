@@ -13,32 +13,38 @@ class Game:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font("comici.ttf", 32)
         self.running = True
+        self.map_list = ["img/golf_map1.png", "img/golf_map2.png", "img/golf_map3.png"]
 
         self.index = 0
         self.directionImage = None
 
-        self.colors = [BLUE, RED, PURPLE, WHITE]
+        self.scores = []
 
     def new(self):
-        self.playing = True
+        if self.map_list:
+            self.playing = True
+            self.colors = [LIGHT_BLUE, RED, PURPLE, WHITE, ORANGE, YELLOW, PINK]
 
-        self.all_sprites   = pygame.sprite.LayeredUpdates()
-        self.blocks        = pygame.sprite.LayeredUpdates()
-        self.player_sprite = pygame.sprite.LayeredUpdates()
-        self.goal          = pygame.sprite.LayeredUpdates()
-        self.hill          = pygame.sprite.LayeredUpdates()
-        self.pit           = pygame.sprite.LayeredUpdates()
-        self.water         = pygame.sprite.LayeredUpdates()
-        map = Image.open('img/frame-1-_1_.ppm')
+            self.all_sprites   = pygame.sprite.LayeredUpdates()
+            self.blocks        = pygame.sprite.LayeredUpdates()
+            self.player_sprite = pygame.sprite.LayeredUpdates()
+            self.goal          = pygame.sprite.LayeredUpdates()
+            self.hill          = pygame.sprite.LayeredUpdates()
+            self.pit           = pygame.sprite.LayeredUpdates()
+            self.water         = pygame.sprite.LayeredUpdates()
 
-        self.players = []
-        self.first_hit = False
-        self.generateTilemap()
-        self.y_offset = self.players[0].rect.centery - WIN_HEIGHT/2
-        self.x_offset = self.players[0].rect.centerx - WIN_WIDTH/2
-        for sprite in self.all_sprites:
-            sprite.rect.x -= self.x_offset
-            sprite.rect.y -= self.y_offset
+            self.nbr = random.randint(0, len(self.map_list) - 1)
+            map = self.map_list[self.nbr]
+
+            self.players = []
+            self.first_hit = False
+            self.create_tilemap(map)
+            self.generateTilemap()
+            self.y_offset = self.players[0].rect.centery - WIN_HEIGHT/2
+            self.x_offset = self.players[0].rect.centerx - WIN_WIDTH/2
+            for sprite in self.all_sprites:
+                sprite.rect.x -= self.x_offset
+                sprite.rect.y -= self.y_offset
     def events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -54,12 +60,14 @@ class Game:
                 self.playing = False
                 for sprite in self.all_sprites:
                     sprite.kill()
-        self.callScoreboard()
-        self.running = False
+        if self.map_list:
+            self.callScoreboard()
+        else:
+            self.running = False
 
-    def create_tilemap(self):
+    def create_tilemap(self, map):
         # Open the image
-        img = Image.open("img/golf_map2.png")
+        img = Image.open(map)
         
         # Convert the image to grayscale
         img = img.convert('RGB')
@@ -84,7 +92,6 @@ class Game:
             self.map.append(row)
     
     def generateTilemap(self):
-        self.create_tilemap()
         for i, row in enumerate(self.map):
             for j, column in enumerate(row):
                 if column == [(0,0,0)]:
@@ -102,13 +109,22 @@ class Game:
                     Pit(self, j, i, radius, steepness)
                 elif column == [(0,0,255)]:
                     Water(self, j, i)
+                elif column[0][0] == 150:
+                    move_x = column[0][1]
+                    move_y = column[0][2]
+                    WallOfDestruction(self, j, i, move_x, move_y, 2)
+                elif column[0][0] == 200:
+                    move_x = column[0][1]
+                    move_y = column[0][2]
+                    WallOfDestruction(self, j, i, move_x, move_y, 1)
                 elif column ==[(211, 211, 211)]:
                     for u in range(self.count):
                         print("Player", i, j)
                         color_index = random.randint(0, len(self.colors) - 1)
                         self.players.append(Player(self, j, i, u, self.colors[color_index]))
                         self.colors.pop(color_index)
-                    self.scores = [0 for u in range(self.count)]
+                    if not self.scores:
+                        self.scores = [0 for u in range(self.count)]
                     self.recent_score = [0 for u in range(self.count)]
 
         self.minimap.fill(GREEN)
@@ -135,9 +151,9 @@ class Game:
         self.clock.tick(FPS)
         pygame.display.update()
 
-    def drawDirection(self, pos):
+    def drawDirection(self, pos, color):
         self.directionImage = pygame.surface.Surface((WIN_WIDTH, WIN_HEIGHT), pygame.SRCALPHA)
-        pygame.draw.circle(self.directionImage, WHITE, (WIN_WIDTH/2 - pos[0], WIN_HEIGHT/2 - pos[1]), 5)
+        pygame.draw.circle(self.directionImage, color, (WIN_WIDTH/2 - pos[0], WIN_HEIGHT/2 - pos[1]), 5)
 
 
 
@@ -204,7 +220,8 @@ class Game:
 
             pygame.display.update()
     def defineScoreboard(self):
-        pressed = False
+        self.start_time = pygame.time.get_ticks()
+        self.current_time = pygame.time.get_ticks() + 1
         self.scoreboard = pygame.surface.Surface((500, 500), pygame.SRCALPHA)
         self.scoreboard.fill(TRANSPARENT)
         pygame.draw.rect(self.scoreboard, MAROON, (0, 0, 500, 100))
@@ -216,13 +233,16 @@ class Game:
             self.scoreboard.blit(pygame.font.Font.render(self.font, "Total: " + str(self.scores[i]), True, BLACK), (350, 100 * (i+1) + 20))
     def callScoreboard(self):
         self.defineScoreboard()
-        while not pressed:
+        while self.current_time - self.start_time < 1000:
+            self.current_time = pygame.time.get_ticks()
             self.screen.fill(PURPLE)
             self.screen.blit(self.scoreboard, (50, 50))
             pygame.display.update()
-            key = pygame.key.get_pressed()
-            if key[pygame.K_SPACE]:
-                pressed = True
+        self.map_list.pop(self.nbr)
+        print(self.map_list)
+        print(self.nbr)
+        self.new()
+        self.main()
 
 g = Game()
 g.introScreen()
