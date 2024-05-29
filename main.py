@@ -30,14 +30,12 @@ class Game:
             self.player_sprite = pygame.sprite.LayeredUpdates()
             self.goal          = pygame.sprite.LayeredUpdates()
             self.hill          = pygame.sprite.LayeredUpdates()
-            self.pit           = pygame.sprite.LayeredUpdates()
             self.water         = pygame.sprite.LayeredUpdates()
 
             self.nbr = random.randint(0, len(self.map_list) - 1)
             map = self.map_list[self.nbr]
 
             self.players = []
-            self.first_hit = False
             self.create_tilemap(map)
             self.generateTilemap()
             self.y_offset = self.players[0].rect.centery - WIN_HEIGHT/2
@@ -233,7 +231,7 @@ class Game:
             self.scoreboard.blit(pygame.font.Font.render(self.font, "Total: " + str(self.scores[i]), True, BLACK), (350, 100 * (i+1) + 20))
     def callScoreboard(self):
         self.defineScoreboard()
-        while self.current_time - self.start_time < 1000:
+        while self.current_time - self.start_time < 3500:
             self.current_time = pygame.time.get_ticks()
             self.screen.fill(PURPLE)
             self.screen.blit(self.scoreboard, (50, 50))

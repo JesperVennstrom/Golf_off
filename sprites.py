@@ -105,9 +105,6 @@ class Player(pygame.sprite.Sprite):
             for sprite in self.game.all_sprites:
                 sprite.rect.x -= self.x_offset
                 sprite.rect.y -= self.y_offset
-            for sprite in self.game.players:
-                sprite.copy.x -= self.x_offset
-                sprite.copy.y -= self.y_offset
             self.kill()
             self.game.players.remove(self)
             if self.game.index != 0:
@@ -123,9 +120,6 @@ class Player(pygame.sprite.Sprite):
             for sprite in self.game.all_sprites:
                 sprite.rect.x += self.speed * math.cos(self.angle)
 
-            for sprite in self.game.players:
-                sprite.copy.x += self.speed * math.cos(self.angle)
-
         
 
     def moveY(self):
@@ -135,8 +129,6 @@ class Player(pygame.sprite.Sprite):
         if self.game.players[self.game.index] == self:
             for sprite in self.game.all_sprites:
                 sprite.rect.y += self.speed * math.sin(self.angle)
-            for sprite in self.game.players:
-                sprite.copy.y += self.speed * math.sin(self.angle)
 
         
 
@@ -146,7 +138,6 @@ class Player(pygame.sprite.Sprite):
         if self.game.players[self.game.index] == self:
             self.checkMouse()
             self.collidePlayer()
-            self.copy = self.rect.copy()
         
         if self.speed > 0.1:
             self.moveX()
@@ -161,8 +152,6 @@ class Player(pygame.sprite.Sprite):
             for sprite in self.game.all_sprites:
                 if sprite != self:
                     sprite.rect.x -= self.speed * math.cos(self.angle)
-            for sprite in self.game.players:
-                    sprite.copy.x -= self.speed * math.cos(self.angle)
             self.angle = -(self.angle + 180 * 0.0174532925)
 
     def collideY(self):
@@ -171,8 +160,6 @@ class Player(pygame.sprite.Sprite):
             for sprite in self.game.all_sprites:
                 if sprite != self:
                     sprite.rect.y -= self.speed * math.sin(self.angle)
-            for sprite in self.game.players:
-                sprite.copy.y -= self.speed * math.sin(self.angle)
             self.angle = -(self.angle + 360 * 0.0174532925)
 
     def collideMap(self):
@@ -185,20 +172,14 @@ class Player(pygame.sprite.Sprite):
         if hits:
             if self.speed < 4:
                 self.speed = 0
-                if self.game.players[self.game.index] == self and not called_by_wall:
+                self.rect.x -= self.total_x
+                self.rect.y -= self.total_y
+                if self.game.players[self.game.index] == self:
                     for sprite in self.game.all_sprites:
-                        if sprite != self:
                             sprite.rect.x += self.total_x
                             sprite.rect.y += self.total_y
-                    for sprite in self.game.players:
-                        sprite.copy.x += self.total_x
-                        sprite.copy.y += self.total_y
-                else:
-                    self.rect = self.copy
+                if self.game.players[self.game.index] != self or called_by_wall:
                     self.debuff = random.randint(-60, 60)
-                    self.speed = 0
-                    print(self.speed)
-                    self.copy = self.rect.copy()
             else:
                 self.speed = self.speed * 0.90
 
@@ -225,19 +206,17 @@ class Player(pygame.sprite.Sprite):
                 for sprite in self.game.all_sprites:
                     sprite.rect.x -= self.x_offset
                     sprite.rect.y -= self.y_offset
-                for sprite in self.game.players:
-                    sprite.copy.x -= self.x_offset
-                    sprite.copy.y -= self.y_offset
                 self.switch = False
                 self.copy = self.rect.copy()
+                print(self.copy.x, self.copy.y)
                 self.debuff = 0
 
         if self.pressed[0] and self.rect.collidepoint(self.mouse_pos) and self.speed <= 0.1:
             if self.first_time:
                 self.pos_start = (self.mouse_pos[0], self.mouse_pos[1])
-                self.first_time = False
                 self.total_x = 0
                 self.total_y = 0
+                self.first_time = False
         if self.pressed[0] and not self.first_time and self.speed <= 0.1:
             self.pos_end = ((self.mouse_pos[0] - self.pos_start[0]), (self.mouse_pos[1] - self.pos_start[1]))
             self.angle = math.atan2(self.pos_end[1], self.pos_end[0]) + self.debuff * 0.0174532925
@@ -275,9 +254,6 @@ class Player(pygame.sprite.Sprite):
                 for sprite in self.game.all_sprites:
                     sprite.rect.x -= x_offset
                     sprite.rect.y -= y_offset
-                for sprite in self.game.players:
-                    sprite.copy.x -= x_offset
-                    sprite.copy.y -= y_offset
 
 
 class Wall(pygame.sprite.Sprite):
@@ -465,22 +441,28 @@ class WallOfDestruction(pygame.sprite.Sprite):
             if self.max_x != 0:    
                 if self.facing_x == 'left':
                     hits[0].rect.x -= self.speed+1
+                    hits[0].total_x -= self.speed+1
                     if self.game.players[self.game.index] == hits[0]:
                         for sprite in self.game.all_sprites:
                             sprite.rect.x += self.speed+1
+
                 if self.facing_x == 'right':
                     hits[0].rect.x += self.speed+1
+                    hits[0].total_x += self.speed+1
                     if self.game.players[self.game.index] == hits[0]:
                         for sprite in self.game.all_sprites:
                             sprite.rect.x -= self.speed+1
             if self.max_y != 0:
                 if self.facing_y == 'up':
                     hits[0].rect.y -= self.speed +1
+                    hits[0].total_y -= self.speed+1
                     if self.game.players[self.game.index] == hits[0]:
                         for sprite in self.game.all_sprites:
                             sprite.rect.y += self.speed+1
+
                 if self.facing_y == 'down':
                     hits[0].rect.y += self.speed+1
+                    hits[0].total_y += self.speed+1
                     if self.game.players[self.game.index] == hits[0]:
                         for sprite in self.game.all_sprites:
                             sprite.rect.y -= self.speed+1
